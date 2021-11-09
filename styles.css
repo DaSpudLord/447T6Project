@@ -33,13 +33,36 @@
 }
 .tab-bar > button.tab-active
 {
-	background-color: gray;
-
 	border-bottom: 0;
+	
+	background-color: gray;
 
 	cursor: default;
 }
 .tab-bar > *:last-child
 {
 	border-right: 0;
+}
+
+.button-list > button
+{
+	width: 100%;
+
+	border: 3px outset darkgray;
+	padding: 16px;
+
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+
+	background-color: lightgray;
+
+	text-align: left;
+	font-size: 16px;
+
+	cursor: pointer;
+}
+.button-list > button:hover
+{
+	background-color: silver;
 }

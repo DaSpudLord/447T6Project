@@ -48,7 +48,7 @@
 			}
 			.leafmap-sidebar {
 				height: 100%;
-				min-width: 350px; /* Don't let the sidebar shrink too much, TODO: Replace with min-content once the sidebar has stuff in it */
+				min-width: 350px; /* Don't let the sidebar shrink too much, TODO: Replace with min-content once the sidebar has stuff in it? */
 				flex: 1; /* The sidebar will take up approx 1/4ths of the horizontal space of the page */
 				border-left: 1px solid black;
 				overflow: auto; /* If the sidebar's content overflows the sidebar,
@@ -85,7 +85,28 @@
 				</div>
 
 				<div id="tab-list" class="tab-content" hidden>
-					List goes here! <!-- TODO -->
+					<div style="margin:8px">
+						<label>
+							Sort By:
+							<select id="sort-by">
+								<option value="name">Name</option>
+								<option value="cases">Cases</option>
+								<option value="deaths">Deaths</option>
+								<option value="vaccinations">Vaccinations</option>
+							</select>
+						</label>
+						<label style="border-left:1px solid black"><input type="checkbox" id="sort-descending" checked />Descending Order</label>
+					</div>
+
+					<div id="region-list" class="button-list">
+						<!-- TEMPLATE LIST ITEM - This is (TODO: will be) captured as a template by the js
+							 and cloned to make all the actual list elements -->
+						<button>
+							<p class="region-list-name" style="margin:0"></p>
+							<div style="flex:1"></div>
+							<p class="region-list-data" style="margin:0"></p>
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -104,6 +125,22 @@
 					"Navigation Day": getMapboxTiles("navigation-day-v1"),
 					"Navigation Night": getMapboxTiles("navigation-night-v1"),
 				}).addTo(map_main);
+
+			// TEMPLATE LIST ITEM - make clones with REGION_LIST_TEMPLATE.cloneNode(true)
+			const REGION_LIST_TEMPLATE = document.getElementById("region-list").firstElementChild;
+			REGION_LIST_TEMPLATE.remove();
+
+			// Example of setting region list
+			let region_list = document.getElementById("region-list");
+			removeAllChildren(region_list); // First, clear existing children (optional)
+
+			let item = REGION_LIST_TEMPLATE.cloneNode(true); // Make a copy
+			item.getElementsByClassName("region-list-name")[0].innerHTML = "Anne Arundel County"; // Set its text
+			item.getElementsByClassName("region-list-data")[0].innerHTML = "Cases: 420";
+			region_list.appendChild(item); // Add it to the list
+			item = REGION_LIST_TEMPLATE.cloneNode(true);
+			item.getElementsByClassName("region-list-name")[0].innerHTML = "Howard County";
+			region_list.appendChild(item);
 		</script>
 	</body>
 </html>

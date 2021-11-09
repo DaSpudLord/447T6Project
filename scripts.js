@@ -1,3 +1,11 @@
+function removeAllChildren(parent)
+{
+	while (parent.firstChild)
+		parent.removeChild(parent.firstChild);
+}
+
+
+
 const TAB_ACTIVE_CLASS = "tab-active";
 
 function tabClickSelect(button, all_tab_containers_class, target_tab_container_id)
