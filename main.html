@@ -44,12 +44,12 @@
 			}
 			.leafmap {
 				height: 100%;
-				flex: 3; /* The leafmap will take up 3/4ths of the horizontal space of the page */
+				flex: 3; /* The leafmap will take up approx 3/4ths of the horizontal space of the page */
 			}
 			.leafmap-sidebar {
 				height: 100%;
 				min-width: 350px; /* Don't let the sidebar shrink too much, TODO: Replace with min-content once the sidebar has stuff in it */
-				flex: 1; /* The sidebar will take up 1/4ths of the horizontal space of the page */
+				flex: 1; /* The sidebar will take up approx 1/4ths of the horizontal space of the page */
 				border-left: 1px solid black;
 				overflow: auto; /* If the sidebar's content overflows the sidebar,
 					make a scrollbar localized to the sidebar rather than making the entire page scroll */
@@ -73,11 +73,19 @@
 			<div class="leafmap-sidebar">
 				<h1 id="region-title" style="margin:12px">Maryland</h1> <!-- TODO: Set with code -->
 
-				<div class="tab-bar"> <!-- TODO: Hook these buttons up to code -->
-					<button hidden>&lt;</button>
-					<button class="tab-active">Statistics</button>
-					<button>List of Counties</button> <!-- TODO: Set to "List of States" or "List of Counties" with code -->
+				<div class="tab-bar">
+					<button hidden>&lt;</button> <!-- TODO: This button currently does nothing -->
+					<button class="tab-active" onclick="tabClickSelect(this, 'tab-content', 'tab-statistics')">Statistics</button>
+					<button onclick="tabClickSelect(this, 'tab-content', 'tab-list')">List of Counties</button> <!-- TODO: Set to "List of States" or "List of Counties" with code -->
 					<div></div> <!-- empty div lets me do fancy stuff with borders teehee -->
+				</div>
+
+				<div id="tab-statistics" class="tab-content">
+					Statistics go here! <!-- TODO -->
+				</div>
+
+				<div id="tab-list" class="tab-content" hidden>
+					List goes here! <!-- TODO -->
 				</div>
 			</div>
 		</div>
