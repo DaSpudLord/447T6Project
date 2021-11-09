@@ -75,13 +75,19 @@
 
 				<div class="tab-bar">
 					<button hidden>&lt;</button> <!-- TODO: This button currently does nothing -->
-					<button class="tab-active" onclick="tabClickSelect(this, 'tab-content', 'tab-statistics')">Statistics</button>
+					<button class="tab-active" onclick="tabClickSelect(this, 'tab-content', 'tab-stats')">Statistics</button>
 					<button onclick="tabClickSelect(this, 'tab-content', 'tab-list')">List of Counties</button> <!-- TODO: Set to "List of States" or "List of Counties" with code -->
 					<div></div> <!-- empty div lets me do fancy stuff with borders teehee -->
 				</div>
 
-				<div id="tab-statistics" class="tab-content">
-					Statistics go here! <!-- TODO -->
+				<div id="tab-stats" class="tab-content">
+					<!-- TODO: Set these stats in code -->
+					<p style="margin:12px">Last updated <span id="stats-date">N/E/VER</span></p>
+					<p style="margin:16px;margin-top:0;font-size:20px;line-height:150%">
+						Cases: <span id="stats-cases">4321</span><br />
+						Deaths: <span id="stats-deaths">1234</span><br />
+						Vaccinations: <span id="stats-vaccinations">-66</span>
+					</p>
 				</div>
 
 				<div id="tab-list" class="tab-content" hidden>
@@ -99,7 +105,7 @@
 					</div>
 
 					<div id="region-list" class="button-list">
-						<!-- TEMPLATE LIST ITEM - This is (TODO: will be) captured as a template by the js
+						<!-- TEMPLATE LIST ITEM - This is captured as a template by the js
 							 and cloned to make all the actual list elements -->
 						<button>
 							<p class="region-list-name" style="margin:0"></p>
@@ -138,8 +144,10 @@
 			item.getElementsByClassName("region-list-name")[0].innerHTML = "Anne Arundel County"; // Set its text
 			item.getElementsByClassName("region-list-data")[0].innerHTML = "Cases: 420";
 			region_list.appendChild(item); // Add it to the list
+
 			item = REGION_LIST_TEMPLATE.cloneNode(true);
 			item.getElementsByClassName("region-list-name")[0].innerHTML = "Howard County";
+			item.getElementsByClassName("region-list-data")[0].innerHTML = "Cases: 69";
 			region_list.appendChild(item);
 		</script>
 	</body>
