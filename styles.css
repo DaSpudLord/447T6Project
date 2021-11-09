@@ -1,0 +1,45 @@
+.tab-bar
+{
+	display: flex;
+	flex-direction: row;
+	align-items: stretch;
+}
+.tab-bar > *
+{
+	flex: 1;
+
+	border: 1px solid black;
+	border-top: 0;
+	border-bottom: 2px solid black;
+	padding: 12px;
+
+	font-size: 16px;
+
+	cursor: pointer;
+}
+.tab-bar > button
+{
+	min-width: max-content;
+	max-width: max-content;
+	flex: 0;
+
+	border-top: 2px solid black;
+
+	background-color: lightgray;
+}
+.tab-bar > button:hover
+{
+	background-color: silver;
+}
+.tab-bar > button.tab-active
+{
+	background-color: gray;
+
+	border-bottom: 0;
+
+	cursor: default;
+}
+.tab-bar > *:last-child
+{
+	border-right: 0;
+}

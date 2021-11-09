@@ -14,11 +14,14 @@
 				integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
 				crossorigin=""></script>
 
+		<link rel="stylesheet" href="styles.css" />
 		<script src="scripts.js"></script>
 
 		<style>
 			html, body {
 				height: 100%; /* This makes the page conform to the user's vertical screen space */
+				max-height: 100%;
+				font-family: Arial, Helvetica, sans-serif
 			}
 			body {
 				margin: 0px;
@@ -27,14 +30,16 @@
 				align-items: stretch;
 			}
 			.header {
-				flex: 0;
 				min-height: min-content; /* Header has a fixed height */
+				flex: 0;
 				border-bottom: 1px solid black;
 			}
 			.page-content {
+				min-height: 0; /* This prevents the page content from overflowing its container and making the entire page scroll
+					(possible if the sidebar's content overflows the sidebar). I have no fucking idea why this works but it does */
 				flex: 1; /* Page content takes up all vertical space not being used by the header */
 				display: flex;
-				flex-direction: row; /* The page content is itself a (horizontal) flexbox */
+				flex-direction: row; /* The page content is itself a (horizontal) flexbox consisting of the map and the sidebar */
 				align-items: stretch;
 			}
 			.leafmap {
@@ -45,6 +50,9 @@
 				height: 100%;
 				min-width: 350px; /* Don't let the sidebar shrink too much, TODO: Replace with min-content once the sidebar has stuff in it */
 				flex: 1; /* The sidebar will take up 1/4ths of the horizontal space of the page */
+				border-left: 1px solid black;
+				overflow: auto; /* If the sidebar's content overflows the sidebar,
+					make a scrollbar localized to the sidebar rather than making the entire page scroll */
 			}
 		</style>
 	</head>
@@ -52,6 +60,7 @@
 	<body>
 		<!-- Header -->
 		<nav class="header">
+			<h1 style="margin:12px">COVID-19 Data Map</h1>
 			<!-- This is where the title, navbar, and related stuff can go -->
 		</nav>
 
@@ -62,7 +71,14 @@
 
 			<!-- The right info panel -->
 			<div class="leafmap-sidebar">
-				<!-- TODO -->
+				<h1 id="region-title" style="margin:12px">Maryland</h1> <!-- TODO: Set with code -->
+
+				<div class="tab-bar"> <!-- TODO: Hook these buttons up to code -->
+					<button hidden>&lt;</button>
+					<button class="tab-active">Statistics</button>
+					<button>List of Counties</button> <!-- TODO: Set to "List of States" or "List of Counties" with code -->
+					<div></div> <!-- empty div lets me do fancy stuff with borders teehee -->
+				</div>
 			</div>
 		</div>
 		
