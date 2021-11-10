@@ -75,7 +75,6 @@ function getRegionVaccinations(region) { return randomInt(0, 10000); }
 function getRegionParentFipsCode(region) { return region.properties.parent_fips; }
 function getRegionParentName(region) { return region.properties.parent_name; }
 function getRegionHasParent(region) { return "parent_fips" in region.properties; }
-function getRegionGeoJSON(region) { return region; }
 
 
 
@@ -99,7 +98,7 @@ function __forRegionInListByFips(list, fips, action, notfound = null)
 function __forRegionInListByName(list, name, action, notfound = null)
 { __forRegionInListByProperty(list, getRegionName, name, action, notfound); }
 
-function __forAllRegionsInList(list, action, filter = null, notfound = null)
+function __forEachRegionInList(list, action, filter = null, notfound = null, then = null)
 {
 	if (filter)
 	{
@@ -112,8 +111,14 @@ function __forAllRegionsInList(list, action, filter = null, notfound = null)
 				found = true;
 			}
 		}
-		if (!found && notfound)
+		if (found)
+		{
+			if (then)
+				then();
+		} else if (notfound)
+		{
 			notfound();
+		}
 	} else
 	{
 		if (list.length == 0)
@@ -124,15 +129,17 @@ function __forAllRegionsInList(list, action, filter = null, notfound = null)
 		{
 			for (let i = 0; i < list.length; i++)
 				action(list[i]);
+			if (then)
+				then();
 		}
 	}
 }
-function __forAllRegionsInListByProperty(list, getproperty, value, action, notfound = null)
-{ __forAllRegionsInList(list, action, (region) => getproperty(region) == value, notfound); }
-function __forAllRegionsInListByParentFips(list, fips, action, notfound = null)
-{ __forAllRegionsInListByProperty(list, getRegionParentFipsCode, fips, action, notfound); }
-function __forAllRegionsInListByParentName(list, name, action, notfound = null)
-{ __forAllRegionsInListByProperty(list, getRegionParentName, name, action, notfound); }
+function __forEachRegionInListByProperty(list, getproperty, value, action, notfound = null, then = null)
+{ __forEachRegionInList(list, action, (region) => getproperty(region) == value, notfound, then); }
+function __forEachRegionInListByParentFips(list, fips, action, notfound = null, then = null)
+{ __forEachRegionInListByProperty(list, getRegionParentFipsCode, fips, action, notfound, then); }
+function __forEachRegionInListByParentName(list, name, action, notfound = null, then = null)
+{ __forEachRegionInListByProperty(list, getRegionParentName, name, action, notfound, then); }
 
 // These functions are all used to search for a certain region,
 // possibly querying the database and waiting for a response,
@@ -144,25 +151,33 @@ function __forAllRegionsInListByParentName(list, name, action, notfound = null)
 function forCountry(fips, action, notfound = null) { __forRegionInListByFips(COUNTRIES.features, fips, action, notfound); }
 function forCountryByName(name, action, notfound = null) { __forRegionInListByName(COUNTRIES.features, name, action, notfound); }
 
+function forAllCountries(action) { action(COUNTRIES); }
+
+function forEachCountry(action, filter = null, notfound = null, then = null) { __forEachRegionInList(COUNTRIES.features, action, filter, notfound, then); }
+
 function forState(fips, action, notfound = null) { __forRegionInListByFips(STATES.features, fips, action, notfound); }
 function forStateByName(name, action, notfound = null) { __forRegionInListByName(STATES.features, name, action, notfound); }
 
 function forStateParent(state, action, notfound = null) { forCountryByName(getRegionParentName(state), action, notfound); }
 
-function forAllStates(action, filter = null, notfound = null) { __forAllRegionsInList(STATES.features, action, filter, notfound); }
-function forAllStatesInCountry(country, action, notfound = null) { forAllStatesInCountryByName(getRegionName(country), action, notfound); }
-function forAllStatesInCountryByFips(fips, action, notfound = null) { __forAllRegionsInListByParentFips(STATES.features, fips, action, notfound); }
-function forAllStatesInCountryByName(name, action, notfound = null) { __forAllRegionsInListByParentName(STATES.features, name, action, notfound); }
+function forAllStates(action) { action(STATES); }
+
+function forEachState(action, filter = null, notfound = null, then = null) { __forEachRegionInList(STATES.features, action, filter, notfound, then); }
+function forEachStateInCountry(country, action, notfound = null, then = null) { forEachStateInCountryByName(getRegionName(country), action, notfound, then); }
+function forEachStateInCountryByFips(fips, action, notfound = null, then = null) { __forEachRegionInListByParentFips(STATES.features, fips, action, notfound, then); }
+function forEachStateInCountryByName(name, action, notfound = null, then = null) { __forEachRegionInListByParentName(STATES.features, name, action, notfound, then); }
 
 function forCounty(fips, action, notfound = null) { __forRegionInListByFips(COUNTIES.features, fips, action, notfound); }
 function forCountyByName(name, action, notfound = null) { __forRegionInListByName(COUNTIES.features, name, action, notfound); }
 
 function forCountyParent(county, action, notfound = null) { forState(getRegionParentFipsCode(county), action, notfound); }
 
-function forAllCounties(action, filter = null, notfound = null) { __forAllRegionsInList(COUNTIES.features, action, filter, notfound); }
-function forAllCountiesInState(state, action, notfound = null) { forAllCountiesInStateByFips(getRegionFipsCode(state), action, notfound); }
-function forAllCountiesInStateByFips(fips, action, notfound = null) { __forAllRegionsInListByParentFips(COUNTIES.features, fips, action, notfound); }
-function forAllCountiesInStateByName(name, action, notfound = null) { __forAllRegionsInListByParentName(COUNTIES.features, name, action, notfound); }
+function forAllCounties(action) { action(COUNTIES); }
+
+function forEachCounty(action, filter = null, notfound = null, then = null) { __forEachRegionInList(COUNTIES.features, action, filter, notfound, then); }
+function forEachCountyInState(state, action, notfound = null, then = null) { forEachCountyInStateByFips(getRegionFipsCode(state), action, notfound, then); }
+function forEachCountyInStateByFips(fips, action, notfound = null, then = null) { __forEachRegionInListByParentFips(COUNTIES.features, fips, action, notfound, then); }
+function forEachCountyInStateByName(name, action, notfound = null, then = null) { __forEachRegionInListByParentName(COUNTIES.features, name, action, notfound, then); }
 
 function forRegion(fips, action, notfound = null)
 { forCountry(fips, action, () => forState(fips, action, () => forCounty(fips, action, notfound))); }
@@ -188,15 +203,15 @@ function forRegionParent(region, action, notfound = null)
 	}
 }
 
-function forAllRegionsInParent(parent, action, notfound = null)
+function forEachRegionInParent(parent, action, notfound = null, then = null)
 {
 	switch (getRegionType(parent))
 	{
 		case 0:
-			forAllStatesInCountry(parent, action, notfound);
+			forEachStateInCountry(parent, action, notfound, then);
 			return;
 		case 1:
-			forAllCountiesInState(parent, action, notfound);
+			forEachCountyInState(parent, action, notfound, then);
 			return;
 		case 2:
 			if (notfound)

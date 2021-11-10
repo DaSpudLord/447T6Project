@@ -194,9 +194,9 @@
 				// Clear the map of all geo data and re-add it all
 				MAP_MAIN_GEO.clearLayers();
 				removeAllChildren(document.getElementById("region-list")); // Clear the list so we can re-insert all the elements
-				forAllRegionsInParent(region, function(subregion) // For each child region...
+				forEachRegionInParent(region, function(subregion) // For each child region...
 				{
-					MAP_MAIN_GEO.addData(getRegionGeoJSON(subregion)); // Add its geo data to the map
+					MAP_MAIN_GEO.addData(subregion); // Add its geo data to the map
 
 					// And also insert it into the sidebar list
 					let item = REGION_LIST_TEMPLATE.cloneNode(true);
@@ -219,9 +219,20 @@
 				}, function() // If no subregions exist (the current region is a county)
 				{
 					tab_button_list.hidden = true;
-					MAP_MAIN_GEO.addData(getRegionGeoJSON(region));
-				});
-				
+					MAP_MAIN_GEO.addData(region);
+					resetMapBounds();
+				}, resetMapBounds);
+			}
+			// Helper functions
+			function setActiveRegionByFips(fips, fail = () => console.warn("Unknown fips code " + fips))
+			{ forRegion(fips, setActiveRegion, fail); }
+			function setActiveRegionByName(name, fail = () => console.warn("Unknown region name " + name))
+			{ forRegionByName(name, setActiveRegion, fail); }
+			function setActiveRegionParent(region, fail = () => console.warn("Region" + getRegionName(region) + " has no parent"))
+			{ forRegionParent(region, setActiveRegion, fail); }
+
+			function resetMapBounds()
+			{
 				try
 				{
 					// Leaflet gets big mad if we try to flyToBounds() before we setView().
@@ -234,18 +245,12 @@
 					MAP_MAIN.fitBounds(MAP_MAIN_GEO.getBounds());
 				}
 			}
-			// Helper functions
-			function setActiveRegionByFips(fips, fail = () => console.warn("Unknown fips code " + fips))
-			{ forRegion(fips, setActiveRegion, fail); }
-			function setActiveRegionByName(name, fail = () => console.warn("Unknown region name " + name))
-			{ forRegionByName(name, setActiveRegion, fail); }
-			function setActiveRegionParent(region, fail = () => console.warn("Region" + getRegionName(region) + " has no parent"))
-			{ forRegionParent(region, setActiveRegion, fail); }
 
 			function onEachRegionFeature(feature, layer)
 			{
 				layer.bindTooltip(getRegionName(feature));
-				layer.on("click", function(e) { setActiveRegionByFips(getRegionFipsCode(this)); }, feature);
+				if (feature != region_active)
+					layer.on("click", function(e) { setActiveRegionByFips(getRegionFipsCode(this)); }, feature);
 			}
 		</script>
 	</body>
