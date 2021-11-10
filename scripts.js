@@ -69,6 +69,7 @@ function getRegionFipsCode(region) { return region.properties.fips; }
 function getRegionName(region) { return region.properties.name; }
 function getRegionType(region) { return region.properties.type; }
 function getRegionTypeText(region) { return REGION_TYPES[region.properties.type]; }
+function getRegionPopulation(region) { return randomInt(0, 100000); }
 function getRegionCases(region) { return randomInt(0, 10000); }
 function getRegionDeaths(region) { return randomInt(0, 1000); }
 function getRegionVaccinations(region) { return randomInt(0, 10000); }

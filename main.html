@@ -74,7 +74,7 @@
 			<div class="leafmap-sidebar">
 				<div style="margin:12px">
 					<h1 id="region-title" style="margin:0"></h1>
-					<p id="region-fips" style="margin:0" hidden>Fips Code: <span id="region-fips-code"></span></p>
+					<p id="region-fips" style="margin:0" hidden>FIPS Code: <span id="region-fips-code"></span></p>
 				</div>
 
 				<div class="tab-bar">
@@ -87,6 +87,7 @@
 				<div id="tab-content-stats" class="tab-content">
 					<p style="margin:12px">Last updated <span id="stats-date">N/E/VER</span></p>
 					<p style="margin:16px;margin-top:0;font-size:20px;line-height:150%">
+						Population: <span id="stats-population"></span><br />
 						Cases: <span id="stats-cases"></span><br />
 						Deaths: <span id="stats-deaths"></span><br />
 						Vaccinations: <span id="stats-vaccinations"></span>
@@ -165,6 +166,7 @@
 
 				// Set the titles and the stats
 				document.getElementById("region-title").innerHTML = getRegionName(region);
+				document.getElementById("stats-population").innerHTML = getRegionPopulation(region).toLocaleString();
 				document.getElementById("stats-cases").innerHTML = getRegionCases(region).toLocaleString();
 				document.getElementById("stats-deaths").innerHTML = getRegionDeaths(region).toLocaleString();
 				document.getElementById("stats-vaccinations").innerHTML = getRegionVaccinations(region).toLocaleString();
