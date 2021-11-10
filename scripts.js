@@ -54,3 +54,15 @@ function getMapboxTiles(map_type)
 			token: "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw",
 		});
 }
+
+
+
+/*
+ * For easy refactoring
+ */
+function getRegionName(region) { return region.properties.name; }
+function getRegionType(region) { return region.properties.type; }
+function getRegionFipsCode(region) { return region.properties.fips; }
+function getRegionCases(region) { return region.properties.cases; }
+function getRegionDeaths(region) { return region.properties.deaths; }
+function getRegionVaccinations(region) { return region.properties.vaccinations; }
