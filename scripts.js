@@ -64,6 +64,7 @@ function getMapboxTiles(map_type)
 
 const REGION_TYPES = ["Country", "State", "County"];
 
+// Get various properties of a region geoJSON object. These should make future refactorings easier
 function getRegionFipsCode(region) { return region.properties.fips; }
 function getRegionName(region) { return region.properties.name; }
 function getRegionType(region) { return region.properties.type; }
@@ -132,6 +133,13 @@ function __forAllRegionsInListByParentFips(list, fips, action, notfound = null)
 { __forAllRegionsInListByProperty(list, getRegionParentFipsCode, fips, action, notfound); }
 function __forAllRegionsInListByParentName(list, name, action, notfound = null)
 { __forAllRegionsInListByProperty(list, getRegionParentName, name, action, notfound); }
+
+// These functions are all used to search for a certain region,
+// possibly querying the database and waiting for a response,
+// and then perform some action on the found region(s).
+// They can't just return the found region,
+// because (in future versions) they might need to query the server and wait for a response.
+// For now, they just get their data from a hardcoded list.
 
 function forCountry(fips, action, notfound = null) { __forRegionInListByFips(COUNTRIES.features, fips, action, notfound); }
 function forCountryByName(name, action, notfound = null) { __forRegionInListByName(COUNTRIES.features, name, action, notfound); }

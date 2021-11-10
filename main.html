@@ -78,9 +78,9 @@
 				</div>
 
 				<div class="tab-bar">
-					<button id="tab-button-back" onclick="setActiveRegionParent(region_active)" hidden>&lt;</button> <!-- TODO: This button currently does nothing -->
+					<button id="tab-button-back" onclick="setActiveRegionParent(region_active)" hidden>&lt;</button>
 					<button id="tab-button-stats" onclick="tabClickSelect(this, 'tab-content', 'tab-content-stats')">Statistics</button>
-					<button id="tab-button-list" onclick="tabClickSelect(this, 'tab-content', 'tab-content-list')">List of Counties</button> <!-- TODO: Set to "List of States" or "List of Counties" with code -->
+					<button id="tab-button-list" onclick="tabClickSelect(this, 'tab-content', 'tab-content-list')">List of Counties</button>
 					<div></div> <!-- empty div lets me do fancy stuff with borders teehee -->
 				</div>
 
@@ -151,29 +151,32 @@
 			region_list.appendChild(item); // Add it to the list
 			*/
 
-
-
-			//forStateByName("Maryland", setActiveRegion, function () { console.warn("Unable to initialize starting region"); });
 			setActiveRegionByName("United States");
-			
+
+
+
+			// This function sets what region we should show stats for,
+			// as well as what region should be highlighted on the map.
+			// Any subregions in the region (ie counties in a state) will be selectable in the map and in the list
 			function setActiveRegion(region)
 			{
 				region_active = region;
 				console.log("Called setActiveRegion() for region " + getRegionName(region) + " (fips=" + getRegionFipsCode(region) + ")");
 
+				// Set the titles and the stats
 				document.getElementById("region-title").innerHTML = getRegionName(region);
 				document.getElementById("stats-cases").innerHTML = getRegionCases(region).toLocaleString();
 				document.getElementById("stats-deaths").innerHTML = getRegionDeaths(region).toLocaleString();
 				document.getElementById("stats-vaccinations").innerHTML = getRegionVaccinations(region).toLocaleString();
-				document.getElementById("tab-button-stats").click();
 
-				document.getElementById("tab-button-back").hidden = !getRegionHasParent(region);
+				document.getElementById("tab-button-stats").click(); // TODO: If the back button was clicked, navigate to the list tab instead
+				document.getElementById("tab-button-back").hidden = !getRegionHasParent(region); // If the region has no parent, hide the back button
 				let region_fips = document.getElementById("region-fips");
 				let tab_button_list = document.getElementById("tab-button-list");
-				switch (getRegionType(region))
+				switch (getRegionType(region)) // Sets the fips code for states and counties, and sets the title of the List tab
 				{
 					case 0:
-						region_fips.hidden = true;
+						region_fips.hidden = true; // Countries have no fips code
 						tab_button_list.innerHTML = "List of States";
 						break;
 					case 1:
@@ -187,13 +190,15 @@
 						break;
 				}
 				tab_button_list.hidden = false;
-				
-				MAP_MAIN_GEO.clearLayers();
-				removeAllChildren(document.getElementById("region-list"));
-				forAllRegionsInParent(region, function(subregion)
-				{
-					MAP_MAIN_GEO.addData(getRegionGeoJSON(subregion));
 
+				// Clear the map of all geo data and re-add it all
+				MAP_MAIN_GEO.clearLayers();
+				removeAllChildren(document.getElementById("region-list")); // Clear the list so we can re-insert all the elements
+				forAllRegionsInParent(region, function(subregion) // For each child region...
+				{
+					MAP_MAIN_GEO.addData(getRegionGeoJSON(subregion)); // Add its geo data to the map
+
+					// And also insert it into the sidebar list
 					let item = REGION_LIST_TEMPLATE.cloneNode(true);
 					item.getElementsByClassName("region-list-name")[0].innerHTML = getRegionName(subregion);
 					let item_data = item.getElementsByClassName("region-list-data")[0];
@@ -229,6 +234,7 @@
 					MAP_MAIN.fitBounds(MAP_MAIN_GEO.getBounds());
 				}
 			}
+			// Helper functions
 			function setActiveRegionByFips(fips, fail = () => console.warn("Unknown fips code " + fips))
 			{ forRegion(fips, setActiveRegion, fail); }
 			function setActiveRegionByName(name, fail = () => console.warn("Unknown region name " + name))
