@@ -72,16 +72,19 @@
 
 			<!-- The right info panel -->
 			<div class="leafmap-sidebar">
-				<h1 id="region-title" style="margin:12px"></h1>
+				<div style="margin:12px">
+					<h1 id="region-title" style="margin:0"></h1>
+					<p id="region-fips" style="margin:0" hidden>Fips Code: <span id="region-fips-code"></span></p>
+				</div>
 
 				<div class="tab-bar">
-					<button hidden>&lt;</button> <!-- TODO: This button currently does nothing -->
-					<button class="tab-active" onclick="tabClickSelect(this, 'tab-content', 'tab-stats')">Statistics</button>
-					<button onclick="tabClickSelect(this, 'tab-content', 'tab-list')">List of Counties</button> <!-- TODO: Set to "List of States" or "List of Counties" with code -->
+					<button id="tab-button-back" onclick="setActiveRegionParent(region_active)" hidden>&lt;</button> <!-- TODO: This button currently does nothing -->
+					<button id="tab-button-stats" onclick="tabClickSelect(this, 'tab-content', 'tab-content-stats')">Statistics</button>
+					<button id="tab-button-list" onclick="tabClickSelect(this, 'tab-content', 'tab-content-list')">List of Counties</button> <!-- TODO: Set to "List of States" or "List of Counties" with code -->
 					<div></div> <!-- empty div lets me do fancy stuff with borders teehee -->
 				</div>
 
-				<div id="tab-stats" class="tab-content">
+				<div id="tab-content-stats" class="tab-content">
 					<p style="margin:12px">Last updated <span id="stats-date">N/E/VER</span></p>
 					<p style="margin:16px;margin-top:0;font-size:20px;line-height:150%">
 						Cases: <span id="stats-cases"></span><br />
@@ -90,7 +93,7 @@
 					</p>
 				</div>
 
-				<div id="tab-list" class="tab-content" hidden>
+				<div id="tab-content-list" class="tab-content" hidden>
 					<div style="margin:8px">
 						<label>
 							Sort By: <!-- TODO: Implement sorting -->
@@ -107,7 +110,7 @@
 					<div id="region-list" class="button-list">
 						<!-- TEMPLATE LIST ITEM - This is captured as a template by the js
 							 and cloned to make all the actual list elements -->
-						<button> <!-- TODO: These buttons currently do nothing when clicked -->
+						<button onclick="setActiveRegionByFips(dataset.fips)">
 							<p class="region-list-name" style="margin:0"></p>
 							<div style="flex:1"></div> <!-- Empty space -->
 							<p class="region-list-data" style="margin:0"></p>
@@ -118,8 +121,9 @@
 		</div>
 		
 		<script>
-			const MAP_MAIN = L.map("map-main").setView([39.0458, -76.6413], 8); // TODO: Maybe replace this setView with something not-hardcoded
+			const MAP_MAIN = L.map("map-main");
 			const MAP_MAIN_GEO = L.geoJSON(null, { onEachFeature: onEachRegionFeature }).addTo(MAP_MAIN);
+			var region_active = null;
 
 			L.control.layers(
 				{
@@ -137,57 +141,105 @@
 			const REGION_LIST_TEMPLATE = document.getElementById("region-list").firstElementChild;
 			REGION_LIST_TEMPLATE.remove();
 
-			// Example of setting region list
+			/* Example of setting region list
 			let region_list = document.getElementById("region-list");
 			removeAllChildren(region_list); // First, clear existing children (optional)
-
-			/*
+			
 			let item = REGION_LIST_TEMPLATE.cloneNode(true); // Make a copy
 			item.getElementsByClassName("region-list-name")[0].innerHTML = "Anne Arundel County"; // Set its text
 			item.getElementsByClassName("region-list-data")[0].innerHTML = "Cases: 420";
 			region_list.appendChild(item); // Add it to the list
 			*/
 
-			setActiveRegion(MARYLAND, MARYLAND_COUNTIES);
 
 
-
-			function setActiveRegion(region, subregions)
+			//forStateByName("Maryland", setActiveRegion, function () { console.warn("Unable to initialize starting region"); });
+			setActiveRegionByName("United States");
+			
+			function setActiveRegion(region)
 			{
-				MAP_MAIN_GEO.clearLayers();
-				removeAllChildren(region_list);
+				region_active = region;
+				console.log("Called setActiveRegion() for region " + getRegionName(region) + " (fips=" + getRegionFipsCode(region) + ")");
 
 				document.getElementById("region-title").innerHTML = getRegionName(region);
-				document.getElementById("stats-cases").innerHTML = getRegionCases(region);
-				document.getElementById("stats-deaths").innerHTML = getRegionDeaths(region);
-				document.getElementById("stats-vaccinations").innerHTML = getRegionVaccinations(region);
+				document.getElementById("stats-cases").innerHTML = getRegionCases(region).toLocaleString();
+				document.getElementById("stats-deaths").innerHTML = getRegionDeaths(region).toLocaleString();
+				document.getElementById("stats-vaccinations").innerHTML = getRegionVaccinations(region).toLocaleString();
+				document.getElementById("tab-button-stats").click();
 
-				MAP_MAIN_GEO.addData(subregions);
-				MAP_MAIN.flyToBounds(MAP_MAIN_GEO.getBounds());
+				document.getElementById("tab-button-back").hidden = !getRegionHasParent(region);
+				let region_fips = document.getElementById("region-fips");
+				let tab_button_list = document.getElementById("tab-button-list");
+				switch (getRegionType(region))
+				{
+					case 0:
+						region_fips.hidden = true;
+						tab_button_list.innerHTML = "List of States";
+						break;
+					case 1:
+						region_fips.firstElementChild.innerHTML = getRegionFipsCode(region);
+						region_fips.hidden = false;
+						tab_button_list.innerHTML = "List of Counties";
+						break;
+					case 2:
+						region_fips.firstElementChild.innerHTML = getRegionFipsCode(region);
+						region_fips.hidden = false;
+						break;
+				}
+				tab_button_list.hidden = false;
+				
+				MAP_MAIN_GEO.clearLayers();
+				removeAllChildren(document.getElementById("region-list"));
+				forAllRegionsInParent(region, function(subregion)
+				{
+					MAP_MAIN_GEO.addData(getRegionGeoJSON(subregion));
+
+					let item = REGION_LIST_TEMPLATE.cloneNode(true);
+					item.getElementsByClassName("region-list-name")[0].innerHTML = getRegionName(subregion);
+					let item_data = item.getElementsByClassName("region-list-data")[0];
+					switch (document.getElementById("sort-by").value)
+					{
+						case "deaths":
+							item_data.innerHTML = "Deaths: " + getRegionDeaths(subregion).toLocaleString();
+							break;
+						case "vaccinations":
+							item_data.innerHTML = "Vaccinations: " + getRegionVaccinations(subregion).toLocaleString();
+							break;
+						default:
+							item_data.innerHTML = "Cases: " + getRegionCases(subregion).toLocaleString();
+							break;
+					}
+					item.dataset.fips = getRegionFipsCode(subregion);
+					document.getElementById("region-list").appendChild(item);
+				}, function() // If no subregions exist (the current region is a county)
+				{
+					tab_button_list.hidden = true;
+					MAP_MAIN_GEO.addData(getRegionGeoJSON(region));
+				});
+				
+				try
+				{
+					// Leaflet gets big mad if we try to flyToBounds() before we setView().
+					// Why can't it just make the first call to flyToBounds() behave like setView()? I dunno.
+					// It also has no way of detecting if setView() has yet been called.
+					// So while this is probably not a good way to do this, idfc
+					MAP_MAIN.flyToBounds(MAP_MAIN_GEO.getBounds());
+				} catch (e)
+				{
+					MAP_MAIN.fitBounds(MAP_MAIN_GEO.getBounds());
+				}
 			}
+			function setActiveRegionByFips(fips, fail = () => console.warn("Unknown fips code " + fips))
+			{ forRegion(fips, setActiveRegion, fail); }
+			function setActiveRegionByName(name, fail = () => console.warn("Unknown region name " + name))
+			{ forRegionByName(name, setActiveRegion, fail); }
+			function setActiveRegionParent(region, fail = () => console.warn("Region" + getRegionName(region) + " has no parent"))
+			{ forRegionParent(region, setActiveRegion, fail); }
 
 			function onEachRegionFeature(feature, layer)
 			{
-				let item = REGION_LIST_TEMPLATE.cloneNode(true);
-				item.getElementsByClassName("region-list-name")[0].innerHTML = getRegionName(feature);
-				let item_data = item.getElementsByClassName("region-list-data")[0];
-				switch (document.getElementById("sort-by").value)
-				{
-					case "deaths":
-						item_data.innerHTML = "Deaths: " + getRegionDeaths(feature);
-						break;
-					case "vaccinations":
-						item_data.innerHTML = "Vaccinations: " + getRegionVaccinations(feature);
-						break;
-					default:
-						item_data.innerHTML = "Cases: " + getRegionCases(feature);
-						break;
-				}
-				//item.getElementsByClassName("region-list-data")[0].innerHTML = "Cases: " + getRegionCases(feature);
-				item.dataset.fips = getRegionFipsCode(feature);
-				document.getElementById("region-list").appendChild(item);
-
 				layer.bindTooltip(getRegionName(feature));
+				layer.on("click", function(e) { setActiveRegionByFips(getRegionFipsCode(this)); }, feature);
 			}
 		</script>
 	</body>
