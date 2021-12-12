@@ -30,9 +30,9 @@ function tabClick(button, all_tab_containers, target_tab_container)
 	let buttons = button.parentElement.children;
 	for (let i = 0; i < buttons.length; i++)
 	{
-		if (buttons[i].tagName != "BUTTON")
-			continue;
 		if (buttons[i] === button)
+			continue;
+		if (buttons[i].tagName != "BUTTON")
 			continue;
 		buttons[i].classList.remove(TAB_ACTIVE_CLASS);
 	}

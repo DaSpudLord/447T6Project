@@ -86,7 +86,7 @@
 
 				<div id="tab-content-stats" class="tab-content">
 					<p style="margin:12px">Last updated <span id="stats-date">N/E/VER</span></p>
-					<p style="margin:16px;margin-top:0;font-size:20px;line-height:150%">
+					<p style="margin:16px; font-size:20px; line-height:150%">
 						Population: <span id="stats-population"></span><br />
 						Cases: <span id="stats-cases"></span><br />
 						Deaths: <span id="stats-deaths"></span><br />
@@ -95,19 +95,29 @@
 				</div>
 
 				<div id="tab-content-list" class="tab-content" hidden>
-					<div style="margin:8px">
-						<label>
-							Sort By: <!-- TODO: Implement sorting -->
-							<select id="sort-by">
+					<div>
+						<!-- TODO: Implement sorting -->
+						<div style="margin:6px; display:flex; align-items:center">
+							<label for="sort-by">Sort By:&nbsp;</label>
+							<select id="sort-by" style="flex:1; padding:2px; font-size:14px">
 								<option value="name">Name</option>
 								<option value="cases">Cases</option>
 								<option value="deaths">Deaths</option>
 								<option value="vaccinations">Vaccinations</option>
 							</select>
-						</label>
-						<label style="border-left:1px solid black"><input type="checkbox" id="sort-descending" checked />Descending Order</label>
+							<label style="margin-left:4px; border-left:1px solid black">
+								<input type="checkbox" id="sort-descending" style="" checked />Descending Order
+							</label>
+						</div>
+						<div style="margin:6px; display:flex; align-items:center">
+							<label for="sort-filter">Filter:&nbsp;</label>
+							<input type="text" id="sort-filter" style="flex:1; padding:4px; font-size:14px" />
+						</div>
 					</div>
 
+					<div id="region-list-all" class="button-list">
+						<button><p style="margin:0">All Counties</p></button>
+					</div>
 					<div id="region-list" class="button-list">
 						<!-- TEMPLATE LIST ITEM - This is captured as a template by the js
 							 and cloned to make all the actual list elements -->
@@ -180,11 +190,13 @@
 					case 0:
 						region_fips.hidden = true; // Countries have no fips code
 						tab_button_list.innerHTML = "List of States";
+						document.getElementById("region-list-all").hidden = false;
 						break;
 					case 1:
 						region_fips.firstElementChild.innerHTML = getRegionFipsCode(region);
 						region_fips.hidden = false;
 						tab_button_list.innerHTML = "List of Counties";
+						document.getElementById("region-list-all").hidden = true;
 						break;
 					case 2:
 						region_fips.firstElementChild.innerHTML = getRegionFipsCode(region);
@@ -195,7 +207,8 @@
 
 				// Clear the map of all geo data and re-add it all
 				MAP_MAIN_GEO.clearLayers();
-				removeAllChildren(document.getElementById("region-list")); // Clear the list so we can re-insert all the elements
+				let region_list = document.getElementById("region-list");
+				removeAllChildren(region_list); // Clear the list so we can re-insert all the elements
 				forEachRegionInParent(region, function(subregion) // For each child region...
 				{
 					MAP_MAIN_GEO.addData(subregion); // Add its geo data to the map
@@ -217,7 +230,7 @@
 							break;
 					}
 					item.dataset.fips = getRegionFipsCode(subregion);
-					document.getElementById("region-list").appendChild(item);
+					region_list.appendChild(item);
 				}, function() // If no subregions exist (the current region is a county)
 				{
 					tab_button_list.hidden = true;
@@ -230,7 +243,7 @@
 			{ forRegion(fips, setActiveRegion, fail); }
 			function setActiveRegionByName(name, fail = () => console.warn("Unknown region name " + name))
 			{ forRegionByName(name, setActiveRegion, fail); }
-			function setActiveRegionParent(region, fail = () => console.warn("Region" + getRegionName(region) + " has no parent"))
+			function setActiveRegionParent(region, fail = () => console.warn("Region " + getRegionName(region) + " has no parent"))
 			{ forRegionParent(region, setActiveRegion, fail); }
 
 			function resetMapBounds()
