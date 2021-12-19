@@ -85,7 +85,7 @@
 				</div>
 
 				<div id="tab-content-stats" class="tab-content">
-					<p style="margin:12px">Last updated <span id="stats-date">N/E/VER</span></p>
+					<p style="margin:12px">Last updated <span id="stats-date"></span></p>
 					<p style="margin:16px; font-size:20px; line-height:150%">
 						Population: <span id="stats-population"></span><br />
 						Cases: <span id="stats-cases"></span><br />
@@ -131,24 +131,45 @@
 		</div>
 		
 		<script>
+			const MAP_COLORS = ["#dc4324", "#e1601c", "#e57915", "#e59115", "#e5a81f", "#e2bf30", "#ded546", "#d8ea5f"];
+
 			const MAP_MAIN = L.map("map-main");
-			const MAP_MAIN_GEO = L.geoJSON(null, { onEachFeature: onEachRegionFeature }).addTo(MAP_MAIN);
+			const MAP_MAIN_GEO = L.geoJSON(null, {
+				onEachFeature: onEachRegionFeature,
+				style: function (region)
+				{
+					let data = Math.floor((getRegionDataPicker(region, document.getElementById("sort-by")) - data_min) / (data_max - data_min) * MAP_COLORS.length);
+					if (data < 0)
+					{
+						console.warn("Region styler: Color data value below valid range");
+						data = 0;
+					} else if (data >= MAP_COLORS.length)
+					{
+						console.warn("Region styler: Color data value below valid range");
+						data = MAP_COLORS.length - 1;
+					}
+					return {
+						color: MAP_COLORS[data],
+					};
+				},
+			}).addTo(MAP_MAIN);
 			const REGION_ALLCOUNTIES = "all-counties"; // Constant used as active region when "all counties" button is clicked, kinda hacky but fuck it
 			var region_active = null;
 			var subregions = null;
 			var back = false; // yea, this is also hacky. im getting lazy. sue me
+			var data_min = Infinity;
+			var data_max = 0;
 
-			L.control.layers(
-				{
-					"Streets": getMapboxTiles("streets-v11").addTo(MAP_MAIN), // This one's the default
-					"Outdoors": getMapboxTiles("outdoors-v11"),
-					"Light": getMapboxTiles("light-v10"),
-					"Dark": getMapboxTiles("dark-v10"),
-					"Satellite": getMapboxTiles("satellite-v9"),
-					"Satellite Streets": getMapboxTiles("satellite-streets-v11"),
-					"Navigation Day": getMapboxTiles("navigation-day-v1"),
-					"Navigation Night": getMapboxTiles("navigation-night-v1"),
-				}).addTo(MAP_MAIN);
+			L.control.layers({
+				"Streets": getMapboxTiles("streets-v11").addTo(MAP_MAIN), // This one's the default
+				"Outdoors": getMapboxTiles("outdoors-v11"),
+				"Light": getMapboxTiles("light-v10"),
+				"Dark": getMapboxTiles("dark-v10"),
+				"Satellite": getMapboxTiles("satellite-v9"),
+				"Satellite Streets": getMapboxTiles("satellite-streets-v11"),
+				"Navigation Day": getMapboxTiles("navigation-day-v1"),
+				"Navigation Night": getMapboxTiles("navigation-night-v1"),
+			}).addTo(MAP_MAIN);
 
 			// TEMPLATE LIST ITEM - make clones with REGION_LIST_TEMPLATE.cloneNode(true)
 			const REGION_LIST_TEMPLATE = document.getElementById("region-list").firstElementChild;
@@ -177,6 +198,7 @@
 				console.log("Called setActiveRegion() for region " + getRegionName(region) + " (fips=" + getRegionFipsCode(region) + ")");
 
 				// Set the titles and the stats
+				document.getElementById("stats-date").innerHTML = getRegionLastUpdated(region);
 				document.getElementById("region-title").innerHTML = getRegionName(region);
 				document.getElementById("stats-population").innerHTML = getRegionPopulation(region).toLocaleString();
 				document.getElementById("stats-cases").innerHTML = getRegionCases(region).toLocaleString();
@@ -261,6 +283,9 @@
 				subregions = [];
 				let filters = document.getElementById("sort-filter").value;
 				filters = filters.length == 0 ? [] : filters.toUpperCase().split(MATCH_WHITESPACE); // tokenize filters
+				let sort_by = document.getElementById("sort-by").value;
+				data_min = Infinity;
+				data_max = 0;
 
 				let forEachChildRegion = function(subregion)
 				{
@@ -271,6 +296,14 @@
 							return; // if any filters don't match, don't add to the list
 					}
 					subregions.push(subregion);
+					let data = getRegionDataPicker(subregion, sort_by);
+					if (data < data_min)
+					{
+						data_min = data;
+					} else if (data > data_max)
+					{
+						data_max = data;
+					}
 				}
 				let onFinished = function()
 				{
@@ -288,6 +321,8 @@
 					document.getElementById("tab-button-list").hidden = true;
 					removeAllChildren(document.getElementById("region-list"));
 					MAP_MAIN_GEO.clearLayers();
+					data_min = getRegionDataPicker(region_active, sort_by);
+					data_max = getRegionDataPicker(region_active, sort_by);
 					MAP_MAIN_GEO.addData(region_active);
 
 					if (then)
@@ -380,11 +415,24 @@
 				}
 			}
 
+			function getRegionDataPicker(region, data)
+			{
+				switch (data)
+				{
+					case "deaths":
+						return getRegionDeaths(region);
+					case "vaccinations":
+						return getRegionVaccinations(region);
+					default:
+						return getRegionCases(region);
+				}
+			}
+
 			function onEachRegionFeature(feature, layer)
 			{
 				layer.bindTooltip(getRegionName(feature));
 				if (feature !== region_active)
-					layer.on("click", function(e) { setActiveRegionByFips(getRegionFipsCode(this)); }, feature);
+					layer.on("click", function (e) { return setActiveRegionByFips(getRegionFipsCode(this)); }, feature);
 			}
 		</script>
 	</body>

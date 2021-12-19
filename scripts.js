@@ -60,7 +60,7 @@ function getMapboxTiles(map_type)
 			type: map_type,
 			tileSize: 512,
 			zoomOffset: -1,
-			token: "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw",
+			token: "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw", // I'm pretty sure this is the professor's API key... should we get our own?
 		});
 }
 
@@ -80,6 +80,7 @@ function getRegionVaccinations(region) { return randomInt(0, 10000); }
 function getRegionParentFipsCode(region) { return region.properties.parent_fips; }
 function getRegionParentName(region) { return region.properties.parent_name; }
 function getRegionHasParent(region) { return "parent_fips" in region.properties; }
+function getRegionLastUpdated(region) { return "N/E/VER" }
 
 
 
