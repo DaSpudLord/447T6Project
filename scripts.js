@@ -80,7 +80,13 @@ function getRegionVaccinations(region) { return randomInt(0, 10000); }
 function getRegionParentFipsCode(region) { return region.properties.parent_fips; }
 function getRegionParentName(region) { return region.properties.parent_name; }
 function getRegionHasParent(region) { return "parent_fips" in region.properties; }
-function getRegionLastUpdated(region) { return "N/E/VER" }
+function getRegionLastUpdated(region) { return "N/E/VER"; }
+function getRegionHistory(region) { return [{}, {}, {}]; }
+
+function getHistoryDate(history) { return "UN/KN/OWN"; }
+function getHistoryCases(history) { return randomInt(0, 10000); }
+function getHistoryDeaths(region) { return randomInt(0, 1000); }
+function getHistoryVaccinations(region) { return randomInt(0, 10000); }
 
 
 

@@ -92,6 +92,20 @@
 						Deaths: <span id="stats-deaths"></span><br />
 						Vaccinations: <span id="stats-vaccinations"></span>
 					</p>
+					<p style="margin:0; border-top:1px solid black; padding:12px; font-size:18px">History</p>
+					<div id="history-list" class="button-list">
+						<!-- TEMPLATE LIST ITEM - This is captured as a template by the js
+							 and cloned to make all the actual list elements -->
+						<button style="padding:8px">
+							<p style="margin:0">Date: <span class="history-list-date"></span></p>
+							<div style="flex:1"></div> <!-- Empty space -->
+							<p style="margin:0">
+								Cases: <span class="history-list-cases"></span><br />
+								Deaths: <span class="history-list-deaths"></span><br />
+								Vaccinations: <span class="history-list-vaccinations"></span>
+							</p>
+						</button>
+					</div>
 				</div>
 
 				<div id="tab-content-list" class="tab-content" hidden>
@@ -174,6 +188,8 @@
 			// TEMPLATE LIST ITEM - make clones with REGION_LIST_TEMPLATE.cloneNode(true)
 			const REGION_LIST_TEMPLATE = document.getElementById("region-list").firstElementChild;
 			REGION_LIST_TEMPLATE.remove();
+			const HISTORY_LIST_TEMPLATE = document.getElementById("history-list").firstElementChild;
+			HISTORY_LIST_TEMPLATE.remove();
 
 			/* Example of setting region list
 			let region_list = document.getElementById("region-list");
@@ -204,6 +220,19 @@
 				document.getElementById("stats-cases").innerHTML = getRegionCases(region).toLocaleString();
 				document.getElementById("stats-deaths").innerHTML = getRegionDeaths(region).toLocaleString();
 				document.getElementById("stats-vaccinations").innerHTML = getRegionVaccinations(region).toLocaleString();
+
+				let history = getRegionHistory(region);
+				let history_list = document.getElementById("history-list");
+				removeAllChildren(history_list);
+				for (let i = 0; i < history.length; i++)
+				{
+					let item = HISTORY_LIST_TEMPLATE.cloneNode(true);
+					item.getElementsByClassName("history-list-date")[0].innerHTML = getHistoryDate(history[i]);
+					item.getElementsByClassName("history-list-cases")[0].innerHTML = getHistoryCases(history[i]).toLocaleString();
+					item.getElementsByClassName("history-list-deaths")[0].innerHTML = getHistoryDeaths(history[i]).toLocaleString();
+					item.getElementsByClassName("history-list-vaccinations")[0].innerHTML = getHistoryVaccinations(history[i]).toLocaleString();
+					history_list.appendChild(item);
+				}
 				
 				document.getElementById("tab-button-back").hidden = !getRegionHasParent(region); // If the region has no parent, hide the back button
 				let tab_button_stats = document.getElementById("tab-button-stats");
@@ -308,9 +337,6 @@
 				let onFinished = function()
 				{
 					updateRegionListSort();
-					MAP_MAIN_GEO.clearLayers();
-					for (let i = 0; i < subregions.length; i++)
-						MAP_MAIN_GEO.addData(subregions[i]);
 
 					if (then)
 						then();
@@ -363,6 +389,10 @@
 					subregions.reverse();
 
 				updateRegionList();
+				MAP_MAIN_GEO.clearLayers();
+				for (let i = 0; i < subregions.length; i++)
+					MAP_MAIN_GEO.addData(subregions[i]);
+
 				if (then)
 					then();
 			}
