@@ -1,3 +1,7 @@
+const MATCH_WHITESPACE = /\s+/; // Regexp that matches whitespace
+
+
+
 function random(min, max) { return Math.random() * (max - min) + min; }
 function randomInt(min, max) { return Math.floor(random(Math.ceil(min), Math.floor(max))); }
 

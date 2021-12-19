@@ -14,7 +14,7 @@ const COUNTRIES =
 				"name": "United States",
 				"type": 0,
 			},
-			"geometry": // This should never get used so it doesn't matter
+			"geometry": // This should never get used so it doesn't matter TODO: Now that we have filtering, this might get used! This will need actual data
 			{
 				"type": "Point",
 				"coordinates": [-95.7129, 37.0902],
