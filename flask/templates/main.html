@@ -154,17 +154,8 @@
 				{
 					let data = getRegionDataPicker(region, document.getElementById("sort-by").value) / getRegionPopulation(region);
 					data = Math.floor((data - data_min) / (data_max - data_min) * MAP_COLORS.length);
-					if (data < 0)
-					{
-						console.warn("Region styler: Color data value below valid range");
-						data = 0;
-					} else if (data >= MAP_COLORS.length)
-					{
-						console.warn("Region styler: Color data value above valid range");
-						data = MAP_COLORS.length - 1;
-					}
 					return {
-						color: MAP_COLORS[data],
+						color: MAP_COLORS[data < 0 ? 0 : data >= MAP_COLORS.length ? MAP_COLORS.length - 1 : data],
 					};
 				},
 			}).addTo(MAP_MAIN);
@@ -462,9 +453,26 @@
 
 			function onEachRegionFeature(feature, layer)
 			{
-				layer.bindTooltip(getRegionName(feature));
-				if (feature !== region_active)
+				if (feature === region_active)
+				{
+					layer.bindTooltip(getRegionName(feature));
+				} else
+				{
+					let data;
+					switch (document.getElementById("sort-by").value)
+					{
+						case "deaths":
+							data = "<br>Deaths: " + getRegionDeaths(feature).toLocaleString();
+							break;
+						case "vaccinations":
+							data = "<br>Vaccinations: " + getRegionVaccinations(feature).toLocaleString();
+							break;
+						default:
+							data = "<br>Cases: " + getRegionCases(feature).toLocaleString();
+					}
+					layer.bindTooltip(getRegionName(feature) + data);
 					layer.on("click", function (e) { return setActiveRegionByFips(getRegionFipsCode(this)); }, feature);
+				}
 			}
 		</script>
 	</body>
