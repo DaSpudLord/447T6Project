@@ -14,9 +14,9 @@
 				integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
 				crossorigin=""></script>
 
-		<link rel="stylesheet" href="styles.css" />
-		<script src="scripts.js"></script>
-		<script src="data.js"></script> <!-- TODO: VERY TEMPORARY TESTING DATA -->
+		<link rel="stylesheet" href="{{url_for('static', filename='styles.css')}}" />
+		<script src="{{url_for('static', filename='scripts.js')}}"></script>
+		<script src="{{url_for('static', filename='data.js')}}"></script> <!-- TODO: VERY TEMPORARY TESTING DATA -->
 
 		<style>
 			html, body {
@@ -150,16 +150,17 @@
 			const MAP_MAIN = L.map("map-main");
 			const MAP_MAIN_GEO = L.geoJSON(null, {
 				onEachFeature: onEachRegionFeature,
-				style: function (region)
+				style: function(region)
 				{
-					let data = Math.floor((getRegionDataPicker(region, document.getElementById("sort-by")) - data_min) / (data_max - data_min) * MAP_COLORS.length);
+					let data = getRegionDataPicker(region, document.getElementById("sort-by").value) / getRegionPopulation(region);
+					data = Math.floor((data - data_min) / (data_max - data_min) * MAP_COLORS.length);
 					if (data < 0)
 					{
 						console.warn("Region styler: Color data value below valid range");
 						data = 0;
 					} else if (data >= MAP_COLORS.length)
 					{
-						console.warn("Region styler: Color data value below valid range");
+						console.warn("Region styler: Color data value above valid range");
 						data = MAP_COLORS.length - 1;
 					}
 					return {
@@ -325,7 +326,8 @@
 							return; // if any filters don't match, don't add to the list
 					}
 					subregions.push(subregion);
-					let data = getRegionDataPicker(subregion, sort_by);
+
+					let data = getRegionDataPicker(subregion, sort_by) / getRegionPopulation(subregion);
 					if (data < data_min)
 					{
 						data_min = data;
