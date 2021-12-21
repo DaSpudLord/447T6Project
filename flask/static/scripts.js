@@ -5,6 +5,8 @@ const MATCH_WHITESPACE = /\s+/; // Regexp that matches whitespace
 function random(min, max) { return Math.random() * (max - min) + min; }
 function randomInt(min, max) { return Math.floor(random(Math.ceil(min), Math.floor(max))); }
 
+function toLocaleString(value) { return value ? value.toLocaleString() : "[Unknown]"; }
+
 
 
 function removeAllChildren(parent)
@@ -66,29 +68,103 @@ function getMapboxTiles(map_type)
 
 
 
-const REGION_TYPES = ["Country", "State", "County"];
+//const REGION_TYPES = ["Country", "State", "County"];
+const REGION_TYPES = {
+	"country": 0,
+	"state": 1,
+	"county": 2,
+};
 
 // Get various properties of a region geoJSON object. These should make future refactorings easier
-function getRegionFipsCode(region) { return region.properties.fips; }
-function getRegionName(region) { return region.properties.name; }
-function getRegionType(region) { return region.properties.type; }
-function getRegionTypeText(region) { return REGION_TYPES[region.properties.type]; }
-function getRegionPopulation(region) { return randomInt(0, 100000); }
-function getRegionCases(region) { return randomInt(0, 10000); }
-function getRegionDeaths(region) { return randomInt(0, 1000); }
-function getRegionVaccinations(region) { return randomInt(0, 10000); }
-function getRegionParentFipsCode(region) { return region.properties.parent_fips; }
-function getRegionParentName(region) { return region.properties.parent_name; }
-function getRegionHasParent(region) { return "parent_fips" in region.properties; }
-function getRegionLastUpdated(region) { return "N/E/VER"; }
-function getRegionHistory(region) { return [{}, {}, {}]; }
+function getRegionFipsCode(region) { return region.fips; }
+function getRegionName(region) { return region.name; }
+function getRegionType(region) { return REGION_TYPES[region.level]; }
+function getRegionTypeText(region) { return region.level.charAt(0).toUpperCase() + region.level.slice(1); }
+function getRegionPopulation(region) { return region.population; }
+function getRegionCases(region) { return region.actuals.cases; }
+function getRegionDeaths(region) { return region.actuals.deaths; }
+function getRegionVaccinations(region) { return region.actuals.vaccinationsCompleted; }
+function getRegionParentName(region) { return region.parent; }
+function getRegionHasParent(region) { return region.level != "country"; }
+function getRegionLastUpdated(region) { return region.lastUpdatedDate; }
+function getRegionHistory(region) { return []; }
+function getRegionGeoJSON(region)// { return region; }
+{
+	if ("geo" in region)
+		return region.geo;
+	let geos;// = __getRegionDataForType(getRegionType(region)).geo.features;
+	switch (getRegionType(region))
+	{
+		case 0:
+			region.geo = COUNTRIES.geo;
+			return region.geo;
+		case 1:
+			geos = STATES.geo.features;
+			break;
+		case 2:
+			geos = COUNTIES.geo.features;
+			break;
+		default:
+			console.warn("Unknown region type " + getRegionType(region));
+			return null;
+	}
+
+	for (let i = 0; i < geos.length; i++)
+	{
+		if (regionMatchesGeo(region, geos[i]))
+		{
+			region.geo = geos[i];
+			if (!("region" in region.geo.properties))
+				region.geo.properties.region = region;
+			return region.geo;
+		}
+	}
+	return null;
+}
+function getRegionFromGeoJSON(feature)
+{
+	if (!("properties" in feature))
+		return COUNTRIES.regions[0]; // country
+	if ("region" in feature.properties)
+		return feature.properties.region;
+	let regions;
+	if ("county" in feature.properties)
+	{
+		regions = COUNTIES.regions;
+	} else if ("state" in feature)
+	{
+		regions = STATES.regions;
+	} else
+	{
+		return COUNTRIES.regions[0];
+	}
+
+	for (let i = 0; i < regions.length; i++)
+	{
+		if (regionMatchesGeo(regions[i], feature))
+		{
+			feature.region = regions[i];
+			if (!("geo" in feature.region))
+				feature.region.geo = feature;
+			return feature.region;
+		}
+	}
+	return null;
+}
 
 function getHistoryDate(history) { return "UN/KN/OWN"; }
 function getHistoryCases(history) { return randomInt(0, 10000); }
 function getHistoryDeaths(region) { return randomInt(0, 1000); }
 function getHistoryVaccinations(region) { return randomInt(0, 10000); }
 
+function regionMatchesGeo(region, geo)
+{ return getRegionName(region) == geo.properties.NAME || getRegionFipsCode(region) == ("COUNTY" in geo.properties ? geo.properties.STATE + geo.properties.COUNTY : geo.properties.STATE); }
 
+
+
+var COUNTRIES = null;
+var STATES = null;
+var COUNTIES = null;
 
 function __forRegionInList(list, filter, action, notfound = null)
 {
@@ -148,8 +224,6 @@ function __forEachRegionInList(list, action, filter = null, notfound = null, the
 }
 function __forEachRegionInListByProperty(list, getproperty, value, action, notfound = null, then = null)
 { __forEachRegionInList(list, action, (region) => getproperty(region) == value, notfound, then); }
-function __forEachRegionInListByParentFips(list, fips, action, notfound = null, then = null)
-{ __forEachRegionInListByProperty(list, getRegionParentFipsCode, fips, action, notfound, then); }
 function __forEachRegionInListByParentName(list, name, action, notfound = null, then = null)
 { __forEachRegionInListByProperty(list, getRegionParentName, name, action, notfound, then); }
 
@@ -160,36 +234,94 @@ function __forEachRegionInListByParentName(list, name, action, notfound = null, 
 // because (in future versions) they might need to query the server and wait for a response.
 // For now, they just get their data from a hardcoded list.
 
-function forCountry(fips, action, notfound = null) { __forRegionInListByFips(COUNTRIES.features, fips, action, notfound); }
-function forCountryByName(name, action, notfound = null) { __forRegionInListByName(COUNTRIES.features, name, action, notfound); }
+function fetchCountriesThen(action)
+{
+	if (COUNTRIES && COUNTRIES.regions)
+	{
+		action(COUNTRIES.regions);
+	} else
+	{
+		let url = window.location + "api/countries";
+		console.log("Fetching country data from " + url);
+		window.fetch(url).then((response) => response.json()).then(function(response)
+		{
+			COUNTRIES = response;
+			action(COUNTRIES.regions);
+		});
+	}
+}
 
-function forAllCountries(action) { action(COUNTRIES); }
+function fetchStatesThen(action)
+{
+	if (STATES && STATES.regions)
+	{
+		action(STATES.regions);
+	} else
+	{
+		let url = window.location + "api/states";
+		console.log("Fetching state data from " + url);
+		window.fetch(url).then((response) => response.json()).then(function(response)
+		{
+			STATES = response;
+			action(STATES.regions);
+		});
+	}
+}
 
-function forEachCountry(action, filter = null, notfound = null, then = null) { __forEachRegionInList(COUNTRIES.features, action, filter, notfound, then); }
+function fetchCountiesThen(action)
+{
+	if (COUNTIES && COUNTIES.regions)
+	{
+		action(COUNTIES.regions);
+	} else
+	{
+		let url = window.location + "api/counties";
+		console.log("Fetching county data from " + url);
+		window.fetch(url).then((response) => response.json()).then(function(response)
+		{
+			COUNTIES = response;
+			action(COUNTIES.regions);
+		});
+	}
+}
 
-function forState(fips, action, notfound = null) { __forRegionInListByFips(STATES.features, fips, action, notfound); }
-function forStateByName(name, action, notfound = null) { __forRegionInListByName(STATES.features, name, action, notfound); }
+function forCountry(fips, action, notfound = null)
+{ fetchCountriesThen((countries) => __forRegionInListByFips(countries, fips, action, notfound)); }
+function forCountryByName(name, action, notfound = null)
+{ fetchCountriesThen((countries) => __forRegionInListByName(countries, name, action, notfound)); }
+
+function forAllCountries(action) { fetchCountriesThen(action); }
+
+function forEachCountry(action, filter = null, notfound = null, then = null)
+{ fetchCountriesThen((countries) => __forEachRegionInList(countries, action, filter, notfound, then)); }
+
+function forState(fips, action, notfound = null)
+{ fetchStatesThen((states) => __forRegionInListByFips(states, fips, action, notfound)); }
+function forStateByName(name, action, notfound = null)
+{ fetchStatesThen((states) => __forRegionInListByName(states, name, action, notfound)); }
 
 function forStateParent(state, action, notfound = null) { forCountryByName(getRegionParentName(state), action, notfound); }
 
-function forAllStates(action) { action(STATES); }
+function forAllStates(action) { fetchStatesThen(action); }
 
-function forEachState(action, filter = null, notfound = null, then = null) { __forEachRegionInList(STATES.features, action, filter, notfound, then); }
-function forEachStateInCountry(country, action, notfound = null, then = null) { forEachStateInCountryByName(getRegionName(country), action, notfound, then); }
-function forEachStateInCountryByFips(fips, action, notfound = null, then = null) { __forEachRegionInListByParentFips(STATES.features, fips, action, notfound, then); }
-function forEachStateInCountryByName(name, action, notfound = null, then = null) { __forEachRegionInListByParentName(STATES.features, name, action, notfound, then); }
+function forEachState(action, filter = null, notfound = null, then = null)
+{ fetchStatesThen((states) => __forEachRegionInList(states, action, filter, notfound, then)); }
+function forEachStateInCountry(country, action, notfound = null, then = null)
+{ fetchStatesThen((states) => __forEachRegionInListByParentName(states, getRegionName(country), action, notfound, then)); }
 
-function forCounty(fips, action, notfound = null) { __forRegionInListByFips(COUNTIES.features, fips, action, notfound); }
-function forCountyByName(name, action, notfound = null) { __forRegionInListByName(COUNTIES.features, name, action, notfound); }
+function forCounty(fips, action, notfound = null)
+{ fetchCountiesThen((counties) => __forRegionInListByFips(counties, fips, action, notfound)); }
+function forCountyByName(name, action, notfound = null)
+{ fetchCountiesThen((counties) => __forRegionInListByName(counties, name, action, notfound)); }
 
-function forCountyParent(county, action, notfound = null) { forState(getRegionParentFipsCode(county), action, notfound); }
+function forCountyParent(county, action, notfound = null) { forStateByName(getRegionParentName(county), action, notfound); }
 
-function forAllCounties(action) { action(COUNTIES); }
+function forAllCounties(action) { fetchCountiesThen(action); }
 
-function forEachCounty(action, filter = null, notfound = null, then = null) { __forEachRegionInList(COUNTIES.features, action, filter, notfound, then); }
-function forEachCountyInState(state, action, notfound = null, then = null) { forEachCountyInStateByFips(getRegionFipsCode(state), action, notfound, then); }
-function forEachCountyInStateByFips(fips, action, notfound = null, then = null) { __forEachRegionInListByParentFips(COUNTIES.features, fips, action, notfound, then); }
-function forEachCountyInStateByName(name, action, notfound = null, then = null) { __forEachRegionInListByParentName(COUNTIES.features, name, action, notfound, then); }
+function forEachCounty(action, filter = null, notfound = null, then = null)
+{ fetchCountiesThen((counties) => __forEachRegionInList(counties, action, filter, notfound, then)); }
+function forEachCountyInState(state, action, notfound = null, then = null)
+{ fetchCountiesThen((counties) => __forEachRegionInListByParentName(counties, getRegionName(state), action, notfound, then)); }
 
 function forRegion(fips, action, notfound = null)
 { forCountry(fips, action, () => forState(fips, action, () => forCounty(fips, action, notfound))); }
@@ -231,5 +363,7 @@ function forEachRegionInParent(parent, action, notfound = null, then = null)
 			return;
 		default:
 			console.warn("Encountered region of unknown type " + getRegionType(parent));
+			if (notfound)
+				notfound();
 	}
 }

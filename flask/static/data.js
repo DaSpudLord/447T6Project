@@ -1,7 +1,7 @@
 // TODO: This file is EXTREMELY temporary. It just contains testing data,
 // and should be replaced with actual requests to the database in the future.
 
-const COUNTRIES =
+var COUNTRIES =// null;
 {
 	"type": "FeatureCollection",
 	"features":
@@ -21,9 +21,9 @@ const COUNTRIES =
 			},
 		}
 	],
-};
+};//*/
 
-const STATES =
+var STATES =// null;
 {
 	"type": "FeatureCollection",
 	"features":
@@ -61,10 +61,10 @@ const STATES =
 			},
 		},
 	],
-};
+};//*/
 
-const COUNTIES =
-{
+var COUNTIES = null;
+/*{
 	"type": "FeatureCollection",
 	"features":
 	[
@@ -453,4 +453,4 @@ const COUNTIES =
 			},
 		},
 	]
-}
+}//*/

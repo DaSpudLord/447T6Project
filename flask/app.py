@@ -1,9 +1,14 @@
+import json
 import os
 import sqlite3
 
 #import click
 import flask
 from flask import Flask;
+
+
+
+STATE_NAMES = {"AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California","CO":"Colorado","CT":"Connecticut","DE":"Delaware","FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois","IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana","ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota","MS":"Mississippi","MO":"Missouri","MT":"Montana","NE":"Nebraska","NV":"Nevada","NH":"New Hampshire","NJ":"New Jersey","NM":"New Mexico","NY":"New York","NC":"North Carolina","ND":"North Dakota","OH":"Ohio","OK":"Oklahoma","OR":"Oregon","PA":"Pennsylvania","RI":"Rhode Island","SC":"South Carolina","SD":"South Dakota","TN":"Tennessee","TX":"Texas","UT":"Utah","VT":"Vermont","VA":"Virginia","WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"}
 
 
 
@@ -24,12 +29,58 @@ def create_app(test_config = None):
 	app.teardown_appcontext(close_db)
 
 	@app.route("/")
-	def app_main():
+	def page_main():
 		return flask.render_template("main.html")
 
-	@app.route("/data")
-	def app_loaddata():
-		return flask.jsonify({})
+	@app.route("/api/counties")
+	def api_counties():
+		regions = json.load(open("counties.json"))
+		
+		for region in regions:
+			region["name"] = region["county"]
+			if (region["state"] in STATE_NAMES):
+				region["parent"] = STATE_NAMES[region["state"]]
+			else:
+				region["parent"] = region["state"]
+
+		return {
+			"regions": regions,
+			"geo": json.load(open("gz_2010_us_counties.json"))
+		}
+
+	@app.route("/api/states")
+	def api_states():
+		regions = json.load(open("states.json"))
+
+		for region in regions:
+			if (region["state"] in STATE_NAMES):
+				region["name"] = STATE_NAMES[region["state"]]
+			else:
+				region["name"] = region["state"]
+			region["parent"] = "United States"
+		
+		return {
+			"regions": regions,
+			"geo": json.load(open("gz_2010_us_states.json"))
+		}
+
+	@app.route("/api/countries")
+	def api_countries():
+		return {
+			"regions": [{
+				"fips": 0,
+				"name": "United States",
+				"level": "country",
+				"population": 300000000,
+				"actuals": {
+					"cases": 3,
+					"deaths": 2,
+					"vaccinationsCompleted": 1
+				},
+				"lastUpdatedDate": "2021-12-20"
+			}],
+			"geo": json.load(open("gz_2010_us_outline.json"))
+		}
 
 	return app
 

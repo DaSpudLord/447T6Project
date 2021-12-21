@@ -16,7 +16,7 @@
 
 		<link rel="stylesheet" href="{{url_for('static', filename='styles.css')}}" />
 		<script src="{{url_for('static', filename='scripts.js')}}"></script>
-		<script src="{{url_for('static', filename='data.js')}}"></script> <!-- TODO: VERY TEMPORARY TESTING DATA -->
+		<!--script src="{{url_for('static', filename='data.js')}}"></script> <!-- TODO: VERY TEMPORARY TESTING DATA -->
 
 		<style>
 			html, body {
@@ -150,8 +150,9 @@
 			const MAP_MAIN = L.map("map-main");
 			const MAP_MAIN_GEO = L.geoJSON(null, {
 				onEachFeature: onEachRegionFeature,
-				style: function(region)
+				style: function(feature)
 				{
+					let region = getRegionFromGeoJSON(feature);
 					let data = getRegionDataPicker(region, document.getElementById("sort-by").value) / getRegionPopulation(region);
 					data = Math.floor((data - data_min) / (data_max - data_min) * MAP_COLORS.length);
 					return {
@@ -208,10 +209,10 @@
 				// Set the titles and the stats
 				document.getElementById("stats-date").innerHTML = getRegionLastUpdated(region);
 				document.getElementById("region-title").innerHTML = getRegionName(region);
-				document.getElementById("stats-population").innerHTML = getRegionPopulation(region).toLocaleString();
-				document.getElementById("stats-cases").innerHTML = getRegionCases(region).toLocaleString();
-				document.getElementById("stats-deaths").innerHTML = getRegionDeaths(region).toLocaleString();
-				document.getElementById("stats-vaccinations").innerHTML = getRegionVaccinations(region).toLocaleString();
+				document.getElementById("stats-population").innerHTML = toLocaleString(getRegionPopulation(region));
+				document.getElementById("stats-cases").innerHTML = toLocaleString(getRegionCases(region));
+				document.getElementById("stats-deaths").innerHTML = toLocaleString(getRegionDeaths(region));
+				document.getElementById("stats-vaccinations").innerHTML = toLocaleString(getRegionVaccinations(region));
 
 				let history = getRegionHistory(region);
 				let history_list = document.getElementById("history-list");
@@ -220,9 +221,9 @@
 				{
 					let item = HISTORY_LIST_TEMPLATE.cloneNode(true);
 					item.getElementsByClassName("history-list-date")[0].innerHTML = getHistoryDate(history[i]);
-					item.getElementsByClassName("history-list-cases")[0].innerHTML = getHistoryCases(history[i]).toLocaleString();
-					item.getElementsByClassName("history-list-deaths")[0].innerHTML = getHistoryDeaths(history[i]).toLocaleString();
-					item.getElementsByClassName("history-list-vaccinations")[0].innerHTML = getHistoryVaccinations(history[i]).toLocaleString();
+					item.getElementsByClassName("history-list-cases")[0].innerHTML = toLocaleString(getHistoryCases(history[i]));
+					item.getElementsByClassName("history-list-deaths")[0].innerHTML = toLocaleString(getHistoryDeaths(history[i]));
+					item.getElementsByClassName("history-list-vaccinations")[0].innerHTML = toLocaleString(getHistoryVaccinations(history[i]));
 					history_list.appendChild(item);
 				}
 				
@@ -304,9 +305,6 @@
 				subregions = [];
 				let filters = document.getElementById("sort-filter").value;
 				filters = filters.length == 0 ? [] : filters.toUpperCase().split(MATCH_WHITESPACE); // tokenize filters
-				let sort_by = document.getElementById("sort-by").value;
-				data_min = Infinity;
-				data_max = 0;
 
 				let forEachChildRegion = function(subregion)
 				{
@@ -317,18 +315,10 @@
 							return; // if any filters don't match, don't add to the list
 					}
 					subregions.push(subregion);
-
-					let data = getRegionDataPicker(subregion, sort_by) / getRegionPopulation(subregion);
-					if (data < data_min)
-					{
-						data_min = data;
-					} else if (data > data_max)
-					{
-						data_max = data;
-					}
 				}
 				let onFinished = function()
 				{
+					console.log(subregions.length + " subregions found in " + getRegionName(region_active) + ".");
 					updateRegionListSort();
 
 					if (then)
@@ -336,13 +326,17 @@
 				}
 				let onNoneFound = function()
 				{
+					console.log("No subregions found in " + getRegionName(region_active) + ".");
 					//document.getElementById("tab-button-stats").click(); // should never be needed
 					document.getElementById("tab-button-list").hidden = true;
 					removeAllChildren(document.getElementById("region-list"));
 					MAP_MAIN_GEO.clearLayers();
+					let sort_by = document.getElementById("sort-by").value;
 					data_min = getRegionDataPicker(region_active, sort_by);
 					data_max = getRegionDataPicker(region_active, sort_by);
-					MAP_MAIN_GEO.addData(region_active);
+					let geo = getRegionGeoJSON(region_active);
+					if (geo)
+						MAP_MAIN_GEO.addData(geo);
 
 					if (then)
 						then();
@@ -361,7 +355,8 @@
 			function updateRegionListSort(then = null)
 			{
 				//let sort_descending = document.getElementById("sort-descending").checked;
-				switch (document.getElementById("sort-by").value)
+				let sort_by = document.getElementById("sort-by").value;
+				switch (sort_by)
 				{
 					case "name":
 						subregions.sort((a, b) => getRegionName(a).localeCompare(getRegionName(b)));
@@ -380,11 +375,29 @@
 				}
 				if (!document.getElementById("sort-descending").checked)
 					subregions.reverse();
+				
+				data_min = Infinity;
+				data_max = 0;
+				for (let i = 0; i < subregions.length; i++)
+				{
+					let data = getRegionDataPicker(subregions[i], sort_by) / getRegionPopulation(subregions[i]);
+					if (data < data_min)
+					{
+						data_min = data;
+					} else if (data > data_max)
+					{
+						data_max = data;
+					}
+				}
 
 				updateRegionList();
 				MAP_MAIN_GEO.clearLayers();
 				for (let i = 0; i < subregions.length; i++)
-					MAP_MAIN_GEO.addData(subregions[i]);
+				{
+					let geo = getRegionGeoJSON(subregions[i]);
+					if (geo)
+						MAP_MAIN_GEO.addData(getRegionGeoJSON(subregions[i]));
+				}
 
 				if (then)
 					then();
@@ -400,18 +413,21 @@
 				for (let i = 0; i < subregions.length; i++)
 				{
 					let item = REGION_LIST_TEMPLATE.cloneNode(true); // make a new list item and set it up
-					item.getElementsByClassName("region-list-name")[0].innerHTML = getRegionName(subregions[i]);
+					let region_list_name = getRegionName(subregions[i]);
+					if (region_active === REGION_ALLCOUNTIES)
+						region_list_name = region_list_name + ", " + getRegionParentName(subregions[i]);
+					item.getElementsByClassName("region-list-name")[0].innerHTML = region_list_name;
 					let item_data = item.getElementsByClassName("region-list-data")[0];
 					switch (sort_by)
 					{
 						case "deaths":
-							item_data.innerHTML = "Deaths: " + getRegionDeaths(subregions[i]).toLocaleString();
+							item_data.innerHTML = "Deaths: " + toLocaleString(getRegionDeaths(subregions[i]));
 							break;
 						case "vaccinations":
-							item_data.innerHTML = "Vaccinations: " + getRegionVaccinations(subregions[i]).toLocaleString();
+							item_data.innerHTML = "Vaccinations: " + toLocaleString(getRegionVaccinations(subregions[i]));
 							break;
 						default:
-							item_data.innerHTML = "Cases: " + getRegionCases(subregions[i]).toLocaleString();
+							item_data.innerHTML = "Cases: " + toLocaleString(getRegionCases(subregions[i]));
 							break;
 					}
 					item.dataset.fips = getRegionFipsCode(subregions[i]);
@@ -453,25 +469,29 @@
 
 			function onEachRegionFeature(feature, layer)
 			{
-				if (feature === region_active)
+				let region = getRegionFromGeoJSON(feature);
+				if (region === region_active)
 				{
-					layer.bindTooltip(getRegionName(feature));
+					layer.bindTooltip(getRegionName(region));
 				} else
 				{
 					let data;
 					switch (document.getElementById("sort-by").value)
 					{
 						case "deaths":
-							data = "<br>Deaths: " + getRegionDeaths(feature).toLocaleString();
+							data = getRegionDeaths(region);
+							data = data ? "<br>Deaths: " + data.toLocaleString() : "";
 							break;
 						case "vaccinations":
-							data = "<br>Vaccinations: " + getRegionVaccinations(feature).toLocaleString();
+							data = getRegionVaccinations(region);
+							data = data ? "<br>Vaccinations: " + data.toLocaleString() : "";
 							break;
 						default:
-							data = "<br>Cases: " + getRegionCases(feature).toLocaleString();
+							data = getRegionCases(region);
+							data = data ? "<br>Cases: " + data.toLocaleString() : "";
 					}
-					layer.bindTooltip(getRegionName(feature) + data);
-					layer.on("click", function (e) { return setActiveRegionByFips(getRegionFipsCode(this)); }, feature);
+					layer.bindTooltip(getRegionName(region) + data);
+					layer.on("click", function(e) { return setActiveRegionByFips(getRegionFipsCode(this)); }, region);
 				}
 			}
 		</script>
