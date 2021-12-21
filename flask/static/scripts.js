@@ -77,6 +77,18 @@ const REGION_TYPES = {
 
 // Get various properties of a region geoJSON object. These should make future refactorings easier
 function getRegionFipsCode(region) { return region.fips; }
+function getRegionShortName(region)
+{
+	switch (getRegionType(region))
+	{
+		case 0:
+			return region.country;
+		case 1:
+			return region.state;
+		default:
+			return null;
+	}
+}
 function getRegionName(region) { return region.name; }
 function getRegionType(region) { return REGION_TYPES[region.level]; }
 function getRegionTypeText(region) { return region.level.charAt(0).toUpperCase() + region.level.slice(1); }
@@ -113,7 +125,7 @@ function getRegionGeoJSON(region)// { return region; }
 	{
 		if (regionMatchesGeo(region, geos[i]))
 		{
-			region.geo = geos[i];
+			region.geo = geos[i]; // cache this result
 			if (!("region" in region.geo.properties))
 				region.geo.properties.region = region;
 			return region.geo;
@@ -143,7 +155,7 @@ function getRegionFromGeoJSON(feature)
 	{
 		if (regionMatchesGeo(regions[i], feature))
 		{
-			feature.region = regions[i];
+			feature.region = regions[i]; // cache this result
 			if (!("geo" in feature.region))
 				feature.region.geo = feature;
 			return feature.region;
@@ -165,6 +177,87 @@ function regionMatchesGeo(region, geo)
 var COUNTRIES = null;
 var STATES = null;
 var COUNTIES = null;
+
+var COUNTRIES_FETCH = null;
+var STATES_FETCH = null;
+var COUNTIES_FETCH = null;
+
+function fetchCountriesThen(action)
+{
+	if (COUNTRIES)
+	{
+		action(COUNTRIES.regions);
+	} else
+	{
+		if (!COUNTRIES_FETCH)
+		{
+			let url = window.location + "api/countries";
+			console.log("Fetching country data from " + url);
+			COUNTRIES_FETCH = window.fetch(url).then(function(response)
+			{
+				console.log("Received country data.");
+				return response.json();
+			});
+		}
+		COUNTRIES_FETCH.then(function(response)
+		{
+			COUNTRIES = response;
+			action(COUNTRIES.regions);
+			COUNTRIES_FETCH = null;
+		});
+	}
+}
+
+function fetchStatesThen(action)
+{
+	if (STATES)
+	{
+		action(STATES.regions);
+	} else
+	{
+		if (!STATES_FETCH)
+		{
+			let url = window.location + "api/states";
+			console.log("Fetching state data from " + url);
+			STATES_FETCH = window.fetch(url).then(function (response) {
+				console.log("Received state data.");
+				return response.json();
+			});
+		}
+
+		STATES_FETCH.then(function(response)
+		{
+			STATES = response;
+			action(STATES.regions);
+			STATES_FETCH = null;
+		});
+	}
+}
+
+function fetchCountiesThen(action)
+{
+	if (COUNTIES)
+	{
+		action(COUNTIES.regions);
+	} else
+	{
+		if (!COUNTIES_FETCH) {
+			let url = window.location + "/api/counties";
+			console.log("Fetching county data from " + url + "...");
+			COUNTIES_FETCH = window.fetch(url).then(function (response) {
+				console.log("Received county data.");
+				return response.json();
+			});
+		}
+
+		COUNTIES_FETCH.then(function(response)
+		{
+			COUNTIES = response;
+			action(COUNTIES.regions);
+			COUNTIES_FETCH = null;
+		});
+	}
+}
 
 function __forRegionInList(list, filter, action, notfound = null)
 {
@@ -233,57 +326,6 @@ function __forEachRegionInListByParentName(list, name, action, notfound = null, 
 // They can't just return the found region,
 // because (in future versions) they might need to query the server and wait for a response.
 // For now, they just get their data from a hardcoded list.
-
-function fetchCountriesThen(action)
-{
-	if (COUNTRIES && COUNTRIES.regions)
-	{
-		action(COUNTRIES.regions);
-	} else
-	{
-		let url = window.location + "api/countries";
-		console.log("Fetching country data from " + url);
-		window.fetch(url).then((response) => response.json()).then(function(response)
-		{
-			COUNTRIES = response;
-			action(COUNTRIES.regions);
-		});
-	}
-}
-
-function fetchStatesThen(action)
-{
-	if (STATES && STATES.regions)
-	{
-		action(STATES.regions);
-	} else
-	{
-		let url = window.location + "api/states";
-		console.log("Fetching state data from " + url);
-		window.fetch(url).then((response) => response.json()).then(function(response)
-		{
-			STATES = response;
-			action(STATES.regions);
-		});
-	}
-}
-
-function fetchCountiesThen(action)
-{
-	if (COUNTIES && COUNTIES.regions)
-	{
-		action(COUNTIES.regions);
-	} else
-	{
-		let url = window.location + "api/counties";
-		console.log("Fetching county data from " + url);
-		window.fetch(url).then((response) => response.json()).then(function(response)
-		{
-			COUNTIES = response;
-			action(COUNTIES.regions);
-		});
-	}
-}
 
 function forCountry(fips, action, notfound = null)
 { fetchCountriesThen((countries) => __forRegionInListByFips(countries, fips, action, notfound)); }

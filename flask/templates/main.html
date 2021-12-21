@@ -309,9 +309,12 @@
 				let forEachChildRegion = function(subregion)
 				{
 					let name = getRegionName(subregion).toUpperCase();
+					let name_short = getRegionShortName(subregion);
+					if (name_short != null)
+						name_short = name_short.toUpperCase();
 					for (let i = 0; i < filters.length; i++)
 					{
-						if (!name.includes(filters[i]))
+						if (!name.includes(filters[i]) && !name_short.includes(filters[i]))
 							return; // if any filters don't match, don't add to the list
 					}
 					subregions.push(subregion);
@@ -381,6 +384,8 @@
 				for (let i = 0; i < subregions.length; i++)
 				{
 					let data = getRegionDataPicker(subregions[i], sort_by) / getRegionPopulation(subregions[i]);
+					if (!data)
+						continue;
 					if (data < data_min)
 					{
 						data_min = data;
@@ -494,6 +499,9 @@
 					layer.on("click", function(e) { return setActiveRegionByFips(getRegionFipsCode(this)); }, region);
 				}
 			}
+
+			// counties take a long time to load since theres a lot of data, this will prefetch it
+			setTimeout(() => fetchCountiesThen((c) => {}), 2000);
 		</script>
 	</body>
 </html>
