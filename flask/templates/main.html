@@ -326,7 +326,7 @@
 						name_short = name_short.toUpperCase();
 					for (let i = 0; i < filters.length; i++)
 					{
-						if (!name.includes(filters[i]) && !name_short.includes(filters[i]))
+						if (!(name.includes(filters[i]) || (name_short && name_short.includes(filters[i]))))
 							return; // if any filters don't match, don't add to the list
 					}
 					subregions.push(subregion);
@@ -375,21 +375,27 @@
 				{
 					case "name":
 						subregions.sort((a, b) => getRegionName(a).localeCompare(getRegionName(b)));
+						if (!document.getElementById("sort-descending").checked)
+							subregions.reverse();
 						break;
 					case "cases":
 						subregions.sort((a, b) => getRegionCases(a) - getRegionCases(b));
+						if (document.getElementById("sort-descending").checked)
+							subregions.reverse();
 						break;
 					case "deaths":
 						subregions.sort((a, b) => getRegionDeaths(a) - getRegionDeaths(b));
+						if (document.getElementById("sort-descending").checked)
+							subregions.reverse();
 						break;
 					case "vaccinations":
 						subregions.sort((a, b) => getRegionVaccinations(a) - getRegionVaccinations(b));
+						if (document.getElementById("sort-descending").checked)
+							subregions.reverse();
 						break;
 					default:
 						console.error("Invalid sort selection!");
 				}
-				if (!document.getElementById("sort-descending").checked)
-					subregions.reverse();
 				
 				data_min = Infinity;
 				data_max = 0;
