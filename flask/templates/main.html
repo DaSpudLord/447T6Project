@@ -88,23 +88,25 @@
 					<p style="margin:12px">Last updated <span id="stats-date"></span></p>
 					<p style="margin:16px; font-size:20px; line-height:150%">
 						Population: <span id="stats-population"></span><br />
-						Cases: <span id="stats-cases"></span><br />
-						Deaths: <span id="stats-deaths"></span><br />
-						Vaccinations: <span id="stats-vaccinations"></span>
+						Cases: <span id="stats-cases"></span> (<span id="stats-cases-ratio"></span>%)<br />
+						Deaths: <span id="stats-deaths"></span> (<span id="stats-deaths-ratio"></span>%)<br />
+						Vaccinations: <span id="stats-vaccinations"></span> (<span id="stats-vaccinations-ratio"></span>%)
 					</p>
-					<p style="margin:0; border-top:1px solid black; padding:12px; font-size:18px">History</p>
-					<div id="history-list" class="button-list">
-						<!-- TEMPLATE LIST ITEM - This is captured as a template by the js
-							 and cloned to make all the actual list elements -->
-						<button style="padding:8px">
-							<p style="margin:0">Date: <span class="history-list-date"></span></p>
-							<div style="flex:1"></div> <!-- Empty space -->
-							<p style="margin:0">
-								Cases: <span class="history-list-cases"></span><br />
-								Deaths: <span class="history-list-deaths"></span><br />
-								Vaccinations: <span class="history-list-vaccinations"></span>
-							</p>
-						</button>
+					<div id="history-container">
+						<p style="margin:0; border-top:1px solid black; padding:12px; font-size:18px">History</p>
+						<div id="history-list" class="button-list">
+							<!-- TEMPLATE LIST ITEM - This is captured as a template by the js
+								 and cloned to make all the actual list elements -->
+							<button style="padding:8px">
+								<p style="margin:0">Date: <span class="history-list-date"></span></p>
+								<div style="flex:1"></div> <!-- Empty space -->
+								<p style="margin:0">
+									Cases: <span class="history-list-cases"></span><br />
+									Deaths: <span class="history-list-deaths"></span><br />
+									Vaccinations: <span class="history-list-vaccinations"></span>
+								</p>
+							</button>
+						</div>
 					</div>
 				</div>
 
@@ -211,20 +213,30 @@
 				document.getElementById("region-title").innerHTML = getRegionName(region);
 				document.getElementById("stats-population").innerHTML = toLocaleString(getRegionPopulation(region));
 				document.getElementById("stats-cases").innerHTML = toLocaleString(getRegionCases(region));
+				document.getElementById("stats-cases-ratio").innerHTML = toLocaleRatio(getRegionCases(region), getRegionPopulation(region));
 				document.getElementById("stats-deaths").innerHTML = toLocaleString(getRegionDeaths(region));
+				document.getElementById("stats-deaths-ratio").innerHTML = toLocaleRatio(getRegionDeaths(region), getRegionPopulation(region));
 				document.getElementById("stats-vaccinations").innerHTML = toLocaleString(getRegionVaccinations(region));
+				document.getElementById("stats-vaccinations-ratio").innerHTML = toLocaleRatio(getRegionVaccinations(region), getRegionPopulation(region));
 
 				let history = getRegionHistory(region);
-				let history_list = document.getElementById("history-list");
-				removeAllChildren(history_list);
-				for (let i = 0; i < history.length; i++)
+				if (history.length == 0)
 				{
-					let item = HISTORY_LIST_TEMPLATE.cloneNode(true);
-					item.getElementsByClassName("history-list-date")[0].innerHTML = getHistoryDate(history[i]);
-					item.getElementsByClassName("history-list-cases")[0].innerHTML = toLocaleString(getHistoryCases(history[i]));
-					item.getElementsByClassName("history-list-deaths")[0].innerHTML = toLocaleString(getHistoryDeaths(history[i]));
-					item.getElementsByClassName("history-list-vaccinations")[0].innerHTML = toLocaleString(getHistoryVaccinations(history[i]));
-					history_list.appendChild(item);
+					document.getElementById("history-container").hidden = true;
+				} else
+				{
+					let history_list = document.getElementById("history-list");
+					removeAllChildren(history_list);
+					for (let i = 0; i < history.length; i++)
+					{
+						let item = HISTORY_LIST_TEMPLATE.cloneNode(true);
+						item.getElementsByClassName("history-list-date")[0].innerHTML = getHistoryDate(history[i]);
+						item.getElementsByClassName("history-list-cases")[0].innerHTML = toLocaleString(getHistoryCases(history[i]));
+						item.getElementsByClassName("history-list-deaths")[0].innerHTML = toLocaleString(getHistoryDeaths(history[i]));
+						item.getElementsByClassName("history-list-vaccinations")[0].innerHTML = toLocaleString(getHistoryVaccinations(history[i]));
+						history_list.appendChild(item);
+					}
+					document.getElementById("history-container").hidden = false;
 				}
 				
 				document.getElementById("tab-button-back").hidden = !getRegionHasParent(region); // If the region has no parent, hide the back button

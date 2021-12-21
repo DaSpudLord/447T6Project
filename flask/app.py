@@ -66,19 +66,13 @@ def create_app(test_config = None):
 
 	@app.route("/api/countries")
 	def api_countries():
+		regions = json.load(open("countries.json"))
+
+		for region in regions:
+			region["name"] = "United States"
+
 		return {
-			"regions": [{
-				"fips": 0,
-				"name": "United States",
-				"level": "country",
-				"population": 300000000,
-				"actuals": {
-					"cases": 3,
-					"deaths": 2,
-					"vaccinationsCompleted": 1
-				},
-				"lastUpdatedDate": "2021-12-20"
-			}],
+			"regions": regions,
 			"geo": json.load(open("gz_2010_us_outline.json"))
 		}
 

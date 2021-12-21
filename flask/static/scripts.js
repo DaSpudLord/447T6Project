@@ -5,7 +5,8 @@ const MATCH_WHITESPACE = /\s+/; // Regexp that matches whitespace
 function random(min, max) { return Math.random() * (max - min) + min; }
 function randomInt(min, max) { return Math.floor(random(Math.ceil(min), Math.floor(max))); }
 
-function toLocaleString(value) { return value ? value.toLocaleString() : "[Unknown]"; }
+function toLocaleString(value) { return value ? value.toLocaleString() : "[Unavailable]"; }
+function toLocaleRatio(value, max) { return value && max ? Math.round(value / max * 100) : "??"; }
 
 
 
@@ -166,8 +167,8 @@ function getRegionFromGeoJSON(feature)
 
 function getHistoryDate(history) { return "UN/KN/OWN"; }
 function getHistoryCases(history) { return randomInt(0, 10000); }
-function getHistoryDeaths(region) { return randomInt(0, 1000); }
-function getHistoryVaccinations(region) { return randomInt(0, 10000); }
+function getHistoryDeaths(history) { return randomInt(0, 1000); }
+function getHistoryVaccinations(history) { return randomInt(0, 10000); }
 
 function regionMatchesGeo(region, geo)
 { return getRegionName(region) == geo.properties.NAME || getRegionFipsCode(region) == ("COUNTY" in geo.properties ? geo.properties.STATE + geo.properties.COUNTY : geo.properties.STATE); }
@@ -242,7 +243,7 @@ function fetchCountiesThen(action)
 	} else
 	{
 		if (!COUNTIES_FETCH) {
-			let url = window.location + "/api/counties";
+			let url = window.location + "api/counties";
 			console.log("Fetching county data from " + url + "...");
 			COUNTIES_FETCH = window.fetch(url).then(function (response) {
 				console.log("Received county data.");
